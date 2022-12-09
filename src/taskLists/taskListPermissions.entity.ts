@@ -1,6 +1,12 @@
 import { TaskList } from '../taskLists/taskList.entity';
 import { User } from '../users/user.entity';
-import { Column, Entity, JoinTable, ManyToMany, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinTable,
+  ManyToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
 @Entity()
 export class TaskListPermission {
@@ -15,18 +21,18 @@ export class TaskListPermission {
   @JoinTable()
   public user: User[];
 
-  @Column({default: false})
+  @Column({ default: false })
   admin: boolean;
 
-  @Column({default: false})
+  @Column({ default: false })
   create: boolean;
 
-  @Column({default: false})
+  @Column({ default: false })
   read: boolean;
 
-  @Column({default: false})
+  @Column({ default: false })
   update: boolean;
 
-  @Column({default: false})
+  @Column({ default: false })
   delete: boolean;
 }

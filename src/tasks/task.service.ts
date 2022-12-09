@@ -1,8 +1,7 @@
 import { Task } from './task.entity';
 import AppDataSource from '../ormconfig';
 import { Repository } from 'typeorm';
-import { TaskList } from 'src/taskLists/taskList.entity';
-
+import { TaskList } from '../taskLists/taskList.entity';
 
 export class TaskService {
   taskRepository: Repository<Task>;
@@ -10,7 +9,7 @@ export class TaskService {
     this.taskRepository = AppDataSource.getRepository(Task);
   }
   async create(title: string, text: string, taskList: TaskList) {
-    try {  
+    try {
       const taskData = {
         title,
         text,
@@ -27,7 +26,7 @@ export class TaskService {
     try {
       const task = await this.taskRepository.findOne({
         where: {
-            title: title,
+          title: title,
         },
       });
       return task;
@@ -37,32 +36,32 @@ export class TaskService {
   }
   async findAllInList(taskList: TaskList): Promise<Task[]> {
     try {
-        const task = await this.taskRepository.find({
-          where: {
-            taskList: taskList,
-          },
-        });
-        return task;
-      } catch (err) {
-        console.log(err);
-      }
+      const task = await this.taskRepository.find({
+        where: {
+          taskList: taskList,
+        },
+      });
+      return task;
+    } catch (err) {
+      console.log(err);
+    }
   }
 
   async update(title: string, text: string, task: Task) {
-    try{
-    const updatedTask = await this.taskRepository.update(task, {
-        title:title,
-        text: text,
-    });
-      return updatedTask;
-} catch(err) {
-    console.log(err);
-}
-  }
-  async delete(task:Task) {
     try {
-      const deleteTask = this.taskRepository.delete(task);
-      return deleteTask;
+      const updatedTask = await this.taskRepository.update(task, {
+        title: title,
+        text: text,
+      });
+      return updatedTask;
+    } catch (err) {
+      console.log(err);
+    }
+  }
+  async delete(task: Task): Promise<Task> {
+    try {
+      const deletedTask = this.taskRepository.remove(task);
+      return deletedTask;
     } catch (err) {
       console.log(err);
     }

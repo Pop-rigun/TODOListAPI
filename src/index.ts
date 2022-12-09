@@ -3,21 +3,21 @@ import * as dotenv from 'dotenv';
 import { config } from './config';
 import AppDataSource from './ormconfig';
 import { userController } from './users/user.controller';
-import  JWTverify  from './middleware/authMiddleware'
+import JWTverify from './middleware/authMiddleware';
 import { taskController } from './tasks/task.controller';
 import { taskListController } from './taskLists/taskList.controller';
 
 dotenv.config();
 
 const server = fastify({ logger: true });
-server.register(require('@fastify/swagger'))
+server.register(require('@fastify/swagger'));
 
 server.register(require('@fastify/swagger-ui'), {
   routePrefix: '/docs',
   swagger: {
     info: {
-      title: 'heat-mat swagger docs',
-      description: 'heat-mat swagger docs',
+      title: 'todolist swagger docs',
+      description: 'todolist swagger docs',
       version: '0.1.0',
     },
     externalDocs: {
@@ -28,13 +28,18 @@ server.register(require('@fastify/swagger-ui'), {
     schemes: ['http'],
     consumes: ['application/json'],
     produces: ['application/json'],
+    transformStaticCSP: (header) => header,
+    transformSpecification: (swaggerObject) => {
+      return swaggerObject;
+    },
+    transformSpecificationClone: true,
     securityDefinitions: {
-        http: {
-            type: 'http',
-            scheme: 'bearer',
-            bearerFormat: 'JWT',
-      }
+      apiKey: {
+        type: 'apiKey',
+        name: 'apiKey',
+        in: 'header',
       },
+    },
   },
   uiConfig: {
     docExpansion: 'full',
@@ -48,9 +53,15 @@ server.register(require('@fastify/swagger-ui'), {
       next();
     },
   },
-  staticCSP: false,
+  staticCSP: true,
   exposeRoute: true,
 });
+
+server.register(require('@fastify/auth'));
+server.register(userController);
+server.register(taskController);
+server.register(taskListController);
+server.decorate('JWTverify', JWTverify);
 
 AppDataSource.initialize()
   .then(() => {
@@ -58,18 +69,9 @@ AppDataSource.initialize()
   })
   .catch((error) => console.log(error));
 
-  console.log(config.SWAGGER_HOST);
-
-server.register(require('@fastify/auth'));
-//server.register(require('./middleware/authMiddleware'));
-server.register(userController);
-server.register(taskController);
-server.register(taskListController);
-  server.decorate('JWTverify', JWTverify)
-
-
-
 server
   .listen({ host: '0.0.0.0', port: config.PORT })
-  .then(() => console.log('Server started port:', config.PORT))
+  .then(() => {
+    console.log('Server started port:', config.PORT);
+  })
   .catch(console.error);

@@ -1,15 +1,18 @@
 import { UserService } from './user.service';
-import * as bcrypt from 'bcrypt'
-import { BadRequestError, BaseError, ForbiddenError, NotFoundError } from '../exeptions/exeptions';
+import * as bcrypt from 'bcrypt';
+import {
+  BadRequestError,
+  ForbiddenError,
+  NotFoundError,
+} from '../exeptions/exeptions';
 import { config } from '../config';
 import { TaskListService } from '../taskLists/taskList.service';
-
-const jwt = require('jsonwebtoken')
+import jwt from 'jsonwebtoken';
 
 const userService = new UserService();
 const taskListService = new TaskListService();
 
-export async function userController(fastify, opts) {
+export async function userController(fastify) {
   fastify.post(
     '/user/register',
     {
@@ -24,8 +27,7 @@ export async function userController(fastify, opts) {
         },
         response: {
           200: {
-            description:
-              '',
+            description: '',
             type: 'object',
             properties: {
               jwtoken: { type: 'string' },
@@ -33,8 +35,7 @@ export async function userController(fastify, opts) {
           },
           400: {
             type: 'object',
-            description:
-              '',
+            description: '',
             properties: {
               statusCode: { type: 'number' },
               error: { type: 'string' },
@@ -46,17 +47,17 @@ export async function userController(fastify, opts) {
     },
     async (request) => {
       try {
-        console.log(request.body);
-        
-        const { name, password } = request.body
-        const candidate = await userService.findByName(name)
+        const { name, password } = request.body;
+        const candidate = await userService.findByName(name);
         if (candidate) {
-            throw new BadRequestError(`User with name ${name} is already registered`)
+          throw new BadRequestError(
+            `User with name ${name} is already registered`,
+          );
         }
-        const hashPassword = await bcrypt.hash(password, 5)
-        const user = await userService.create(name, hashPassword)
-        const jwtoken = jwt.sign({ name }, config.SECRET_KEY)
-        return jwtoken
+        const hashPassword = await bcrypt.hash(password, 5);
+        await userService.create(name, hashPassword);
+        const jwtoken = jwt.sign({ name }, config.SECRET_KEY);
+        return jwtoken;
       } catch (err) {
         console.log(err);
         throw err;
@@ -67,8 +68,7 @@ export async function userController(fastify, opts) {
     '/user/login',
     {
       schema: {
-        description:
-          'User login',
+        description: 'User login',
         body: {
           type: 'object',
           properties: {
@@ -77,14 +77,13 @@ export async function userController(fastify, opts) {
           },
         },
         response: {
-           200: {
-            description:
-              '',
+          200: {
+            description: '',
             type: 'object',
             properties: {
               jwtoken: { type: 'string' },
             },
-          },  
+          },
           404: {
             type: 'object',
             description: 'User with this id not found',
@@ -113,12 +112,12 @@ export async function userController(fastify, opts) {
         if (!user) {
           throw new NotFoundError(`User ${name}`);
         }
-        const comparePassword = bcrypt.compareSync(password, user.password)
+        const comparePassword = bcrypt.compareSync(password, user.password);
         if (!comparePassword) {
-            throw new BadRequestError('Invalid password')
+          throw new BadRequestError('Invalid password');
         }
-        const jwtoken = jwt.sign({ name }, config.SECRET_KEY)
-        return jwtoken
+        const jwtoken = jwt.sign({ name }, config.SECRET_KEY);
+        return jwtoken;
       } catch (err) {
         console.log(err);
         throw err;
@@ -129,89 +128,99 @@ export async function userController(fastify, opts) {
     method: 'POST',
     url: '/user/givePermissions',
     preHandler: fastify.auth([fastify.JWTverify]),
-      schema: {
-        description:
-          'User login',
-        body: {
-          type: 'object',
-          properties: {
-            userName: { type: 'string' },
-            taskListTitle: { type: 'string' },
-            premissions: { type: 'object',
-              properties: {
-                read: {type: 'boolean'},
-                write: {type:'boolean'},
-                update: {type:'boolean'},
-                remove: {type:'boolean'},
-              }
-            },
-          },
-        },
-        response: {
-           200: {
-            description:
-              '',
+    schema: {
+      description: 'User login',
+      body: {
+        type: 'object',
+        properties: {
+          userName: { type: 'string' },
+          taskListTitle: { type: 'string' },
+          premissions: {
             type: 'object',
             properties: {
-              jwtoken: { type: 'string' },
-            },
-          },  
-          404: {
-            type: 'object',
-            description: 'User with this id not found',
-            properties: {
-              statusCode: { type: 'number' },
-              error: { type: 'string' },
-              message: { type: 'string' },
-            },
-          },
-          400: {
-            type: 'object',
-            description: 'Error while sending email',
-            properties: {
-              statusCode: { type: 'number' },
-              error: { type: 'string' },
-              message: { type: 'string' },
+              read: { type: 'boolean' },
+              write: { type: 'boolean' },
+              update: { type: 'boolean' },
+              remove: { type: 'boolean' },
             },
           },
         },
       },
+      response: {
+        200: {
+          description: '',
+          type: 'object',
+          properties: {
+            jwtoken: { type: 'string' },
+          },
+        },
+        404: {
+          type: 'object',
+          description: 'User with this id not found',
+          properties: {
+            statusCode: { type: 'number' },
+            error: { type: 'string' },
+            message: { type: 'string' },
+          },
+        },
+        400: {
+          type: 'object',
+          description: 'Error while sending email',
+          properties: {
+            statusCode: { type: 'number' },
+            error: { type: 'string' },
+            message: { type: 'string' },
+          },
+        },
+      },
+    },
     handler: async (request) => {
       try {
         const { userName, taskListTitle, permissions } = request.body;
         const name = request.user;
-        const permission = await userService.checkPermissions(name, taskListTitle)
+        const permission = await userService.checkPermissions(
+          name,
+          taskListTitle,
+        );
         if (!permission.admin) {
-          throw new ForbiddenError
+          throw new ForbiddenError();
         }
-        const user = await userService.findByName(userName)
+        const user = await userService.findByName(userName);
         if (!user) {
-          throw new NotFoundError(userName)
+          throw new NotFoundError(userName);
         }
-        const taskList = await taskListService.findByTitle(taskListTitle)
-        if(!taskList) {
-          throw new NotFoundError(taskListTitle)
+        const taskList = await taskListService.findByTitle(taskListTitle);
+        if (!taskList) {
+          throw new NotFoundError(taskListTitle);
         }
-        const givedPermissions = await userService.givePermissions(user, taskList, permissions)
-        return givedPermissions
+        const givedPermissions = await userService.givePermissions(
+          user,
+          taskList,
+          permissions,
+        );
+        return givedPermissions;
       } catch (err) {
         console.log(err);
         throw err;
       }
     },
-  },
-  );
-fastify.route({
+  });
+  fastify.route({
     method: 'GET',
-    url: '/user/testt',
+    url: '/user/test',
+    security: [
+      {
+        apiKey: [],
+      },
+    ],
     preHandler: fastify.auth([fastify.JWTverify]),
-  handler:async (request) => {
+    handler: async (request) => {
       try {
         return request.user;
       } catch (err) {
         console.log(err);
         throw err;
       }
-    }
-})
+    },
+  });
 }

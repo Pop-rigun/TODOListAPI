@@ -9,8 +9,8 @@ const AppDataSource = new DataSource({
   password: config.PGPASSWORD,
   database: config.PGDB,
   logging: false,
-  entities: ['dist/**/*.entity{ .ts,.js}'],
-  synchronize: true,
+  entities: ['dist/**/*.entity{.ts,.js}'],
+  synchronize: false,
   migrations: ['dist/migrations/*{.ts,.js}'],
   migrationsTableName: 'custom_migrations',
 });
